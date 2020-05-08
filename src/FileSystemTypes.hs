@@ -96,9 +96,9 @@ instance Show Info where
     ++ "\nPermissions: " ++ show pm
     ++ "\nType: " ++ show t
     ++ "\nLastModification: " ++ show time
-    ++ "\nSize: " ++ show sz
+    ++ "\nSize (in bytes): " ++ show sz
   show (InfoForDir (DirInfo p (Size sz) (CountFiles c) pm))
     = "Directory path: " ++ p
-    ++ "\nSize: " ++ show sz
-    ++ "\nCount files: " ++ show c
+    ++ "\nSize (in bytes): " ++ show sz
+    ++ "\nCount files in the directory: " ++ show c
     ++ "\nPermissions: " ++ show pm
