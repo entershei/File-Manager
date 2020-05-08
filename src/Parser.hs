@@ -7,6 +7,7 @@ module Parser
 import Data.Semigroup ((<>))
 import Options.Applicative
 
+-- | Type for parsing input as command line arguments.
 data Command
   = Cd String
   | Dir
@@ -91,6 +92,7 @@ quit = flag' Quit
   <> short 'q'
   <> help "Quit the program" )
 
+-- | Parse input.
 parserCommand :: Parser Command
 parserCommand = cd <|> dir <|> createFolder <|> cat <|> createFile <|> remove
   <|> writeToFile <|> findFile <|> findDir <|> information <|> quit

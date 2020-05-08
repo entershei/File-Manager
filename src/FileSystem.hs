@@ -75,7 +75,8 @@ getDirSize fp = do
   dirSize <- getFileSizeFromFile filesPath 0
   return $ Size dirSize
 
--- | Create file system
+-- | Create file system by reading all files and directories from the current directory
+-- and uses recursive descent.
 readFileSystem :: IO Directories
 readFileSystem = do
   curDir <- getCurrentDirectory
@@ -116,7 +117,7 @@ getAbsolutePaths _ [] = []
 getAbsolutePaths add (x : xs)
   = (add ++ "/" ++ x) : (getAbsolutePaths add xs)
 
--- | Gives only files without dirs
+-- | Gives only files without dirs.
 getFilesFromList :: [FilePath] -> IO [File]
 getFilesFromList [] = return []
 getFilesFromList (x : xs) = do
@@ -134,7 +135,7 @@ getFilesPathFromList (x : xs) = do
   then return tail_
   else return $ x : tail_
 
--- | Returns only files in the dir without directories
+-- | Returns only files in the dir without directories.
 getFilesPath :: FilePath -> IO [FilePath]
 getFilesPath fp = do
   relativePaths <- listDirectory fp
@@ -142,6 +143,7 @@ getFilesPath fp = do
   files <- getFilesPathFromList absolutePaths
   return files
 
+-- | Change directory from the current to the given if it was a subdirectory.
 cd :: String -> FileSystem FSError ()
 cd ".." = do
   directories <- get
@@ -169,7 +171,7 @@ findParent name (x : xs)
               = Just x
   | otherwise = findParent name xs
 
--- | Returns True iff the second argument is parent of the first
+-- | Returns True iff the second argument is parent of the first.
 -- [isParentOf child parent]
 isParentOf :: [FilePath] -> [FilePath] -> Bool
 isParentOf [] _ = False
@@ -189,7 +191,7 @@ changeCurDir :: Directory -> Directories -> Directories
 changeCurDir newD (Directories a _)
   = Directories a (CurrentDir (getPathFromDirectory newD))
 
--- | Search directory by name
+-- | Search directory by name.
 searchDir :: String -> FileSystem FSError Directory
 searchDir name = do
   directories <- get
@@ -204,15 +206,19 @@ findDirInList name (Directories (x : xs) c)
   | otherwise                             = findDirInList name
                                               (Directories xs c)
 
+-- | Returns @FilePath@ from @Directory@.
 getPathFromDirectory :: Directory -> FilePath
 getPathFromDirectory (Directory (DirInfo path _ _ _ ) _) = path
 
+-- | Returns short name of the file or directory.
+-- E.g. aba/ca/as -> as
 getNameFromPath :: FilePath -> String
 getNameFromPath fp = last (splitOn "/" fp)
 
 getNameFromPathD :: Directory -> String
 getNameFromPathD d = getNameFromPath $ getPathFromDirectory d
 
+-- | Return @FilePath@ from @File@.
 getPathFromFile :: File -> String
 getPathFromFile (File ((FileInfo path  _ _ _ _), _)) = path
 
@@ -232,6 +238,7 @@ findFileFromFiles name (x : xs)
   | getNameFromPathF x == name = Just x
   | otherwise                  = findFileFromFiles name xs
 
+-- | Return File with the given name if it was found.
 searchFile :: String -> FileSystem FSError File
 searchFile name = do
   directories <- get
@@ -239,6 +246,8 @@ searchFile name = do
     Nothing -> throwError $ CanNotFindFile name
     Just f  -> return f
 
+-- | Returns current directory for programm.
+-- E.g. after cd it will be changed.
 getCurDir :: Directories -> FilePath
 getCurDir (Directories _ (CurrentDir d)) = d
 
@@ -254,6 +263,7 @@ createFileNames (x : xs) = RelativeNameFile
 getDirectories :: Directories -> [Directory]
 getDirectories (Directories ds _) = ds
 
+-- | Returns subdirectories and files in the current directory.
 dir :: FileSystem FSError Names
 dir = do
   directories <- get
@@ -315,6 +325,7 @@ getFileInforFromFile (File (fi, _)) = fi
 getFileDataFromFile :: File -> FileData
 getFileDataFromFile (File (_, fd)) = fd
 
+-- | Returns information for the given file or directory.
 information :: String -> FileSystem FSError Info
 information name = do
   dirInfo <- dirInformation name
@@ -326,6 +337,7 @@ information name = do
         Just fi -> return fi
     Just di -> return di
 
+-- | Shows a content from the given file, if it was found.
 cat :: String -> FileSystem FSError FileData
 cat name = do
   directories <- get
@@ -334,6 +346,7 @@ cat name = do
     Nothing -> throwError $ CanNotFindFile name
     Just f  -> return $ getFileDataFromFile f
 
+-- | Create new forder in the current directory.
 createFolder :: String -> FileSystem FSError ()
 createFolder name = do
   directories <- get
@@ -348,6 +361,7 @@ createFolder name = do
 addDir :: Directory -> Directories -> Directories
 addDir add (Directories ds curD) = Directories (add : ds) curD
 
+-- | Remove the given forlder if it exist.
 removeFolder :: String -> FileSystem FSError ()
 removeFolder name = do
   directories <- get
@@ -363,10 +377,12 @@ removeDir name (Directories ds c) = Directories (removeFromList ds) c
       | getPathFromDirectory x == name = removeFromList xs
       | otherwise                      = x : (removeFromList xs)
 
+-- | Remove the given folder or file if it exist. (Now remove only forlder)
 remove :: String -> FileSystem FSError ()
 remove name = do
   removeFolder name
 
+-- | Write to real file system changes that was done by the program.
 writeFileSystem :: Directories -> IO ()
 writeFileSystem (Directories newDs _) = do
   oldDirectories <- readFileSystem

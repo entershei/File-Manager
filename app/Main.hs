@@ -15,6 +15,7 @@ import FileSystem (cat, cd, createFolder, dir, getCurDir, getNameFromPath, getPa
                    writeFileSystem)
 import FileSystemTypes (Directories)
 
+-- | This program emulate file system.
 main :: IO ()
 main = do
   fs <- readFileSystem

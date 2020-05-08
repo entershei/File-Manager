@@ -27,10 +27,10 @@ import Data.Time.Clock (UTCTime (..))
 import System.Directory (Permissions (..))
 import System.IO (FilePath)
 
+-- | Main type for file system program.
 type FileSystem e a = ExceptT e (State Directories) a
 
-data FSError = ReadFile FilePath | WriteFile FilePath
-              | CanNotFindFile FilePath
+data FSError =  CanNotFindFile FilePath
               | CanNotFindDir FilePath
               | CanNotFindFleOrDir FilePath
               | CanNotMakeCD FilePath
@@ -40,8 +40,6 @@ instance Show FSError where
   show (CanNotFindFile s)     = "Can't find file: " ++ s
   show (CanNotFindDir s)      = "Can't find dir: " ++ s
   show (CanNotFindFleOrDir s) = "Can't find file or directory: " ++ s
-  show (ReadFile s)           = "Can't read file: " ++ s
-  show (WriteFile s)          = "Can't write to file: " ++ s
   show (CanNotMakeCD s)       = "Can't make cd to " ++ s
   show CanNotGoHigherThanRoot = "Can't go to higher dir then the root"
 
