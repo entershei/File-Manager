@@ -23,9 +23,9 @@ module FileSystemTypes
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.State (State)
-import System.IO (FilePath)
 import Data.Time.Clock (UTCTime (..))
 import System.Directory (Permissions (..))
+import System.IO (FilePath)
 
 type FileSystem e a = ExceptT e (State Directories) a
 
@@ -64,7 +64,7 @@ data Type = NoExecutable | Executable
 
 instance Show Type where
   show NoExecutable = "no-executable"
-  show Executable  = "executable"
+  show Executable   = "executable"
 
 newtype ModificationTime = ModificationTime UTCTime
   deriving (Show)

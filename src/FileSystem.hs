@@ -4,6 +4,7 @@ module FileSystem
   (
     cat,
     cd,
+    createFolder,
     dir,
     getCurDir,
     getNameFromPath,
@@ -19,16 +20,15 @@ module FileSystem
 import Control.Monad.Except (throwError)
 import Control.Monad.State (get, modify)
 import Data.List.Split (splitOn)
+import System.Directory (Permissions (..), createDirectory, doesDirectoryExist, emptyPermissions,
+                         getCurrentDirectory, getFileSize, getModificationTime, getPermissions,
+                         listDirectory, setOwnerReadable, setOwnerSearchable, setOwnerWritable)
 import System.IO (readFile)
-import System.Directory (Permissions (..), createDirectory, doesDirectoryExist,
-                         getCurrentDirectory, getFileSize,
-                         getModificationTime, getPermissions, listDirectory)
 
-import FileSystemTypes (CountFiles (..), CurrentDir (..), Directories (..),
-                        Directory (..), DirInfo (..), File (..), FileData (..),
-                        FileInfo (..), FilesInDir (..), FileSystem,
-                        FSError (..), Info (..), ModificationTime (..),
-                        Names (..), RelaitiveName (..), Size (..), Type (..),)
+import FileSystemTypes (CountFiles (..), CurrentDir (..), DirInfo (..), Directories (..),
+                        Directory (..), FSError (..), File (..), FileData (..), FileInfo (..),
+                        FileSystem, FilesInDir (..), Info (..), ModificationTime (..), Names (..),
+                        RelaitiveName (..), Size (..), Type (..))
 
 getDirInfo :: FilePath -> IO DirInfo
 getDirInfo fp = do
@@ -73,7 +73,7 @@ getDirSize fp = do
   dirSize <- getFileSizeFromFile filesPath 0
   return $ Size dirSize
 
--- | Returns file system
+-- | Create file system
 readFileSystem :: IO Directories
 readFileSystem = do
   curDir <- getCurrentDirectory
@@ -331,6 +331,20 @@ cat name = do
   case requestFile of
     Nothing -> throwError $ CanNotFindFile name
     Just f  -> return $ getFileDataFromFile f
+
+createFolder :: String -> FileSystem FSError ()
+createFolder name = do
+  directories <- get
+  let curDirPath = getCurDir directories
+  let permission = setOwnerSearchable True (setOwnerWritable True
+                     (setOwnerReadable True emptyPermissions))
+  let newDirInfo = DirInfo (curDirPath ++ "/" ++ name)
+                     (Size 0) (CountFiles 0) permission
+  let newDir = Directory newDirInfo (FilesInDir [])
+  modify $ addDir newDir
+
+addDir :: Directory -> Directories -> Directories
+addDir add (Directories ds curD) = Directories (add : ds) curD
 
 writeFileSystem :: Directories -> IO ()
 writeFileSystem (Directories newDs _) = do

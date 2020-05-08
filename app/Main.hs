@@ -7,12 +7,12 @@ import Control.Monad.Except (runExceptT)
 import Control.Monad.State (runState)
 import Data.Semigroup ((<>))
 import Options.Applicative
-import Parser
+import Parser (Command (..), parserCommand)
 import System.IO (hFlush, stdout)
 
-import FileSystem (cat, cd, dir, getCurDir, getNameFromPath,
-                   getPathFromDirectory, getPathFromFile, information, readFileSystem,
-                   searchDir, searchFile, writeFileSystem)
+import FileSystem (cat, cd, createFolder, dir, getCurDir, getNameFromPath, getPathFromDirectory,
+                   getPathFromFile, information, readFileSystem, searchDir, searchFile,
+                   writeFileSystem)
 import FileSystemTypes (Directories)
 
 main :: IO ()
@@ -50,8 +50,14 @@ doCommands fsDirs = do
         Right f -> putStrLn $ show f
       doCommands fsDirs
     Success (CreateFolder name)  -> do
-      putStrLn $ "!CF" ++ name
-      doCommands fsDirs
+      let (res, newFS) = runState (runExceptT (createFolder name)) fsDirs
+      case res of
+        Left e  -> do
+          putStrLn $ show e
+          doCommands fsDirs
+        Right _ -> do
+          putStrLn $ "Folder was created"
+          doCommands newFS
     Success (Cat name)           -> do
       let (res, _) = runState (runExceptT $ cat name) fsDirs
       case res of

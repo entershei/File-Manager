@@ -4,8 +4,8 @@ module Parser
     parserCommand,
   ) where
 
-import Options.Applicative
 import Data.Semigroup ((<>))
+import Options.Applicative
 
 data Command
   = Cd String
