@@ -12,6 +12,7 @@ module FileSystem
     getPathFromFile,
     information,
     readFileSystem,
+    remove,
     searchDir,
     searchFile,
     writeFileSystem
@@ -22,7 +23,8 @@ import Control.Monad.State (get, modify)
 import Data.List.Split (splitOn)
 import System.Directory (Permissions (..), createDirectory, doesDirectoryExist, emptyPermissions,
                          getCurrentDirectory, getFileSize, getModificationTime, getPermissions,
-                         listDirectory, setOwnerReadable, setOwnerSearchable, setOwnerWritable)
+                         listDirectory, removeDirectory, setOwnerReadable, setOwnerSearchable,
+                         setOwnerWritable)
 import System.IO (readFile)
 
 import FileSystemTypes (CountFiles (..), CurrentDir (..), DirInfo (..), Directories (..),
@@ -346,16 +348,42 @@ createFolder name = do
 addDir :: Directory -> Directories -> Directories
 addDir add (Directories ds curD) = Directories (add : ds) curD
 
+removeFolder :: String -> FileSystem FSError ()
+removeFolder name = do
+  directories <- get
+  let curDirPath = getCurDir directories
+  modify $ removeDir (curDirPath ++ "/" ++ name)
+
+removeDir :: FilePath -> Directories -> Directories
+removeDir name (Directories ds c) = Directories (removeFromList ds) c
+  where
+    removeFromList :: [Directory] -> [Directory]
+    removeFromList []               = []
+    removeFromList (x : xs)
+      | getPathFromDirectory x == name = removeFromList xs
+      | otherwise                      = x : (removeFromList xs)
+
+remove :: String -> FileSystem FSError ()
+remove name = do
+  removeFolder name
+
 writeFileSystem :: Directories -> IO ()
 writeFileSystem (Directories newDs _) = do
   oldDirectories <- readFileSystem
   let toAddDirs = findDirsToAdd (getDirectories oldDirectories) newDs
-  putStrLn $ toStr toAddDirs
   addNewDirs toAddDirs
+  let toRemoveDirs = findDirsToRemove (getDirectories oldDirectories) newDs
+  removeOldDirs toRemoveDirs
 
-toStr :: [FilePath] -> String
-toStr []       = ""
-toStr (x : xs) = x ++ "," ++ toStr xs
+removeOldDirs :: [FilePath] -> IO ()
+removeOldDirs []       = return ()
+removeOldDirs (x : xs) = do
+  removeDirectory x
+  removeOldDirs xs
+
+-- | [old new]
+findDirsToRemove :: [Directory] -> [Directory] -> [FilePath]
+findDirsToRemove old newD = findDirsToAdd newD old
 
 -- | [findDirsToAdd old new]
 findDirsToAdd :: [Directory] -> [Directory] -> [FilePath]

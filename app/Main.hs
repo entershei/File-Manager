@@ -11,7 +11,7 @@ import Parser (Command (..), parserCommand)
 import System.IO (hFlush, stdout)
 
 import FileSystem (cat, cd, createFolder, dir, getCurDir, getNameFromPath, getPathFromDirectory,
-                   getPathFromFile, information, readFileSystem, searchDir, searchFile,
+                   getPathFromFile, information, readFileSystem, remove, searchDir, searchFile,
                    writeFileSystem)
 import FileSystemTypes (Directories)
 
@@ -68,8 +68,14 @@ doCommands fsDirs = do
       putStrLn $ "!CF" ++ name
       doCommands fsDirs
     Success (Remove name)        -> do
-      putStrLn $ "!Rm" ++ name
-      doCommands fsDirs
+      let (res, newFS) = runState (runExceptT (remove name)) fsDirs
+      case res of
+        Left e  -> do
+          putStrLn $ show e
+          doCommands fsDirs
+        Right _ -> do
+          putStrLn $ "Ok"
+          doCommands newFS
     Success (WriteToFile name w) -> do
       putStrLn $ "!WTF " ++ name ++ " text: " ++ w
       doCommands fsDirs
