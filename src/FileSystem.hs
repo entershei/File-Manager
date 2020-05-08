@@ -20,7 +20,7 @@ import Control.Monad.Except (throwError)
 import Control.Monad.State (get, modify)
 import Data.List.Split (splitOn)
 import System.IO (readFile)
-import System.Directory (Permissions (..), doesDirectoryExist,
+import System.Directory (Permissions (..), createDirectory, doesDirectoryExist,
                          getCurrentDirectory, getFileSize,
                          getModificationTime, getPermissions, listDirectory)
 
@@ -333,6 +333,32 @@ cat name = do
     Just f  -> return $ getFileDataFromFile f
 
 writeFileSystem :: Directories -> IO ()
-writeFileSystem _ = do
-  putStrLn "!!!"
+writeFileSystem (Directories newDs _) = do
+  oldDirectories <- readFileSystem
+  let toAddDirs = findDirsToAdd (getDirectories oldDirectories) newDs
+  putStrLn $ toStr toAddDirs
+  addNewDirs toAddDirs
+
+toStr :: [FilePath] -> String
+toStr []       = ""
+toStr (x : xs) = x ++ "," ++ toStr xs
+
+-- | [findDirsToAdd old new]
+findDirsToAdd :: [Directory] -> [Directory] -> [FilePath]
+findDirsToAdd _ [] = []
+findDirsToAdd old (x : xs)
+  | isInOld x old = findDirsToAdd old xs
+  | otherwise     = (getPathFromDirectory x) : (findDirsToAdd old xs)
+
+isInOld :: Directory -> [Directory] -> Bool
+isInOld _ [] = False
+isInOld nf (x : xs)
+  | getPathFromDirectory nf == getPathFromDirectory x = True
+  | otherwise                                         = isInOld nf xs
+
+addNewDirs :: [FilePath] -> IO ()
+addNewDirs []       = return ()
+addNewDirs (x : xs) = do
+  createDirectory x
+  addNewDirs xs
 
