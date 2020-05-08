@@ -16,6 +16,7 @@ data Command
   | Remove String
   | WriteToFile String String
   | FindFile String
+  | FindDir String
   | Information String
   | Quit
 
@@ -72,6 +73,12 @@ findFile = FindFile <$> strOption
   <> metavar "FILE-NAME"
   <> help "Show path of the file if it was found" )
 
+findDir :: Parser Command
+findDir = FindDir <$> strOption
+  (  long "find-dir"
+  <> metavar "DIRECTORY-NAME"
+  <> help "Show path of the directory if it was found" )
+
 information :: Parser Command
 information = Information <$> strOption
   (  long "info"
@@ -86,5 +93,5 @@ quit = flag' Quit
 
 parserCommand :: Parser Command
 parserCommand = cd <|> dir <|> createFolder <|> cat <|> createFile <|> remove
-  <|> writeToFile <|> findFile <|> information <|> quit
+  <|> writeToFile <|> findFile <|> findDir <|> information <|> quit
 

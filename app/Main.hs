@@ -3,22 +3,25 @@ module Main
     main
   ) where
 
---import FileSystem (FileSystem (..))
+import FileSystem (Directories (..), readFileSystem, writeFileSystem, searchDir,
+                   getPathFromDirectory)
 import Parser
 import Options.Applicative
 import Data.Semigroup ((<>))
-
---main :: IO ()
---main = greet =<< execParser opts
---  where
---    opts = info (sample <**> helper)
---      ( fullDesc
---     <> progDesc "Print a greeting for TARGET"
---     <> header "hello - a test for optparse-applicative" )
+import Control.Monad.Except (runExceptT)
+import Control.Monad.State (runState)
+import System.IO (hFlush, stdout)
+--import Data.Functor.Identity (runIdentity)
 
 main :: IO ()
 main = do
-  putStr "> "
+  fs <- readFileSystem
+  newFS <- doCommands fs
+  writeFileSystem newFS
+
+doCommands :: Directories -> IO (Directories)
+doCommands fsDirs = do
+  putStr "> " >> hFlush stdout
   line <- getLine
   let addToInfo = fullDesc <> progDesc "File System program"
                   <> header "Homework 2"
@@ -27,36 +30,51 @@ main = do
   case parsed of
     Failure e                    -> do
       putStrLn $ "\n" ++ show e
-      main
+      doCommands fsDirs
     Success (Cd name)            -> do
-      putStrLn $ "!Cd " ++ name
-      main
+      putStrLn $ "!cd " ++ name
+      doCommands fsDirs
     Success Dir                  -> do
+--      let _ = (runStateT (runFileSystem $ dir) fsDirs)
+--                      `catchError` hendler
+--      doCommands fsDirs
       putStrLn $ "!Dir"
-      main
+      doCommands fsDirs
     Success (CreateFolder name)  -> do
       putStrLn $ "!CF" ++ name
-      main
+      doCommands fsDirs
     Success (Cat name)           -> do
       putStrLn $ "!Cat" ++ name
-      main
+      doCommands fsDirs
     Success (CreateFile name)    -> do
       putStrLn $ "!CF" ++ name
-      main
+      doCommands fsDirs
     Success (Remove name)        -> do
       putStrLn $ "!Rm" ++ name
-      main
+      doCommands fsDirs
     Success (WriteToFile name w) -> do
       putStrLn $ "!WTF " ++ name ++ " text: " ++ w
-      main
+      doCommands fsDirs
     Success (FindFile name)      -> do
       putStrLn $ "!Find" ++ name
-      main
+      doCommands fsDirs
+    Success (FindDir name)       -> do
+      let (res, _) = runState (runExceptT (searchDir name)) fsDirs
+      case res of
+        Left e -> putStrLn $ show e
+        Right d -> putStrLn $ "Path: " ++ (getPathFromDirectory d)
+      doCommands fsDirs
     Success (Information name)   -> do
       putStrLn $ "!Info" ++ name
-      main
-    Success Quit                 -> putStrLn $ "!Quit"
+      doCommands fsDirs
+    Success Quit                 -> do
+      putStrLn $ "!Quit"
+      return fsDirs
     CompletionInvoked a          -> do
       putStrLn $ "Can't parse! ++" ++ show a
-      main
+      doCommands fsDirs
+
+--hendler :: FSError -> Except FSError a
+--hendler = undefined
+
 
