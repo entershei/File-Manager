@@ -419,4 +419,3 @@ addNewDirs []       = return ()
 addNewDirs (x : xs) = do
   createDirectory x
   addNewDirs xs
-
